@@ -63,7 +63,7 @@ def base_opts():
 def origin_allowed(origin):
     return (
         not origin
-        or origin.startswith("chrome-extension://")
+        or origin.startswith(("chrome-extension://", "moz-extension://"))
         or origin.startswith(("http://127.0.0.1:", "http://localhost:"))
     )
 

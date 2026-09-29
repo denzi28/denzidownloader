@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DenziDownloader",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Download the video or MP3 of the page you're on, using the DenziDownloader desktop app.",
   "action": {
     "default_popup": "popup.html",
@@ -20,7 +20,10 @@
     "128": "icons/128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": [
+      "background.js"
+    ]
   },
   "content_scripts": [
     {
@@ -44,5 +47,11 @@
         "https://*/*"
       ]
     }
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "denzidownloader@denzi28.github.io",
+      "strict_min_version": "128.0"
+    }
+  }
 }
