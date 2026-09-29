@@ -284,8 +284,8 @@ def open_window(url, wait_forever=True):
             threading.Event().wait()
 
 
-def run_tray(url):
-    """Background mode: tray icon with Open/Quit. Falls back to just waiting if no tray is available."""
+def start_tray(detached):
+    """Tray icon with Open/Quit. Returns True if it started. detached=True runs it on its own thread."""
     try:
         import subprocess
         import pystray
@@ -304,9 +304,14 @@ def run_tray(url):
             pystray.MenuItem("Open DenziDownloader", open_app, default=True),
             pystray.MenuItem("Quit", quit_app),
         )
-        pystray.Icon("DenziDownloader", image, "DenziDownloader", menu).run()
+        icon = pystray.Icon("DenziDownloader", image, "DenziDownloader", menu)
+        if detached:
+            icon.run_detached()
+        else:
+            icon.run()
+        return True
     except Exception:
-        threading.Event().wait()
+        return False
 
 
 def main():
@@ -322,9 +327,14 @@ def main():
         target=lambda: app.run(host="127.0.0.1", port=port, threaded=True), daemon=True
     ).start()
     if background:
-        run_tray(url)
+        if not start_tray(detached=False):
+            threading.Event().wait()
     else:
-        open_window(url)
+        # Keep running in the tray after the window is closed (so the browser extension keeps working).
+        has_tray = start_tray(detached=True)
+        open_window(url, wait_forever=has_tray)
+        if has_tray:
+            threading.Event().wait()
 
 
 if __name__ == "__main__":
