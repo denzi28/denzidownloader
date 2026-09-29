@@ -311,6 +311,11 @@ def start_tray(detached):
             icon.run()
         return True
     except Exception:
+        import traceback
+        try:
+            (Path.home() / ".denzidownloader.log").write_text("Tray failed to start:\n" + traceback.format_exc())
+        except Exception:
+            pass
         return False
 
 
