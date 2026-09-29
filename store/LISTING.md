@@ -17,6 +17,7 @@ Send the current page's link to the locally running DenziDownloader app and show
 
 **Permission justifications:**
 - `activeTab` / `tabs`: read the URL of the current tab to pre-fill the link in the popup.
+- Content script on all sites: shows a small download button on top of video players on any page the user visits, and reads the page/post link only when the button is clicked.
 - Host permission `http://127.0.0.1:8765/*`: communicate with the DenziDownloader desktop app on the user's own computer.
 
 **Remote code:** No. **Data collection:** None. The extension collects, stores and transmits no user data; the page URL is sent only to the app on localhost (127.0.0.1).
