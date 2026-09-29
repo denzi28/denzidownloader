@@ -1,8 +1,10 @@
-name: Build Windows app
+name: Build Windows installer
 on:
   push:
     branches: [claude/social-media-video-downloader-evcsjt]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: windows-latest
@@ -13,7 +15,20 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt pyinstaller
       - run: pyinstaller --noconfirm --onefile --windowed --name DenziDownloader --add-data "static;static" --collect-all yt_dlp --collect-all imageio_ffmpeg app.py
+      - name: Install Inno Setup if missing
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+      - name: Build installer
+        shell: pwsh
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=1.0.${{ github.run_number }}" installer.iss'
       - uses: actions/upload-artifact@v4
         with:
-          name: DenziDownloader-windows
-          path: dist/DenziDownloader.exe
+          name: DenziDownloader-Setup
+          path: installer_out/DenziDownloader-Setup.exe
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: DenziDownloader 1.0.${{ github.run_number }}
+          files: installer_out/DenziDownloader-Setup.exe
+          make_latest: true

@@ -2,8 +2,8 @@
 
 Paste a link (YouTube, X/Twitter, Instagram, TikTok, Facebook, Reddit, Vimeo… anything [yt-dlp supports](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)), pick the quality, and download as video (MP4) or MP3.
 
-## Windows app (no Python needed)
-Download `DenziDownloader.exe` from the latest run of the **Build Windows app** GitHub Action (Actions tab > latest run > Artifacts), or build it yourself with `build_windows.bat`. Double-click to open; it runs in its own window with a native folder picker.
+## Windows installer (for sharing)
+Every push builds `DenziDownloader-Setup.exe` and publishes it on the repo's **Releases** page. Send that file (or link) to friends: they double-click it, click Next, and get a Start-menu/desktop shortcut and an uninstaller. No Python or admin rights needed. You can also build locally: `build_windows.bat`, then compile `installer.iss` with Inno Setup.
 
 ## Run from source
 ```
