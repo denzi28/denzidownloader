@@ -4,11 +4,17 @@
   const MIN_W = 200, MIN_H = 120;
   const buttons = new Map(); // video -> button
 
+  const POST_LINK = 'a[href*="/reel/"],a[href*="/p/"],a[href*="/status/"],a[href*="/video/"],a[href*="watch?v="],a[href*="/shorts/"]';
+
   function videoUrl(video) {
-    // On feeds (Instagram, X, TikTok…) the page URL isn't the clip's URL; look for its post link.
+    // On feeds (Instagram, X, TikTok…) the page URL isn't the clip's URL; find the post's own link.
     const scope = video.closest('article') || video.parentElement?.parentElement?.parentElement;
-    const a = scope?.querySelector('a[href*="/reel/"],a[href*="/p/"],a[href*="/status/"],a[href*="/video/"],a[href*="watch?v="],a[href*="/shorts/"]');
-    return a ? a.href : location.href;
+    const links = scope ? [...scope.querySelectorAll(POST_LINK)] : [];
+    // The timestamp link is the post's permalink (X, Threads); prefer it over analytics/quote/other links.
+    const link = links.find(a => a.querySelector('time')) || links[0];
+    if (!link) return location.href;
+    const m = link.href.match(/^(https?:\/\/(?:www\.)?(?:x|twitter)\.com\/[^/]+\/status\/\d+)/);
+    return m ? m[1] : link.href;
   }
 
   function makeButton(video) {
