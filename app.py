@@ -2,6 +2,7 @@
 import json
 import os
 import shutil
+import sys
 import threading
 import uuid
 import webbrowser
@@ -10,7 +11,7 @@ from pathlib import Path
 import yt_dlp
 from flask import Flask, jsonify, request, send_from_directory
 
-APP_DIR = Path(__file__).parent
+APP_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
 CONFIG_FILE = Path.home() / ".denzidownloader.json"
 DEFAULT_DIR = Path.home() / "Downloads" / "DenziDownloader"
 
@@ -64,9 +65,27 @@ def index():
     return send_from_directory(app.static_folder, "index.html")
 
 
+window = None  # pywebview window when running as a desktop app
+
+
 @app.get("/api/config")
 def api_config():
-    return jsonify(download_dir=get_download_dir())
+    return jsonify(download_dir=get_download_dir(), desktop=window is not None)
+
+
+@app.post("/api/pick-folder")
+def api_pick_folder():
+    """Native folder dialog (desktop mode only)."""
+    import webview
+    if window is None:
+        return jsonify(error="Not in desktop mode"), 400
+    res = window.create_file_dialog(webview.FOLDER_DIALOG, directory=get_download_dir())
+    if not res:
+        return jsonify(download_dir=get_download_dir())
+    try:
+        return jsonify(download_dir=set_download_dir(res[0]))
+    except Exception as e:
+        return jsonify(error=str(e)), 400
 
 
 @app.post("/api/config")
@@ -207,9 +226,24 @@ def api_jobs():
     return jsonify(list(jobs.values())[::-1])
 
 
-if __name__ == "__main__":
+def main():
+    global window
     port = int(os.environ.get("PORT", 8765))
-    if not os.environ.get("NO_BROWSER"):
-        threading.Timer(1, lambda: webbrowser.open(f"http://127.0.0.1:{port}")).start()
-    print(f"DenziDownloader running at http://127.0.0.1:{port}")
-    app.run(host="127.0.0.1", port=port, threaded=True)
+    url = f"http://127.0.0.1:{port}"
+    threading.Thread(
+        target=lambda: app.run(host="127.0.0.1", port=port, threaded=True), daemon=True
+    ).start()
+    try:
+        if os.environ.get("NO_DESKTOP"):
+            raise ImportError
+        import webview
+        window = webview.create_window("DenziDownloader", url, width=860, height=780)
+        webview.start()
+    except Exception:  # no webview available: fall back to the browser
+        window = None
+        webbrowser.open(url)
+        threading.Event().wait()
+
+
+if __name__ == "__main__":
+    main()

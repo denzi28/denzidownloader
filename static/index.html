@@ -80,12 +80,12 @@ button:disabled{opacity:.5;cursor:default}
 
 <script>
 const $=id=>document.getElementById(id);
-let info=null,mode='video',dir='',browsing='';
+let info=null,mode='video',dir='',browsing='',desktop=false;
 const api=(u,b)=>fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{}).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||'Error');return j});
 const fmtT=s=>s?`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`:'';
 const fmtS=b=>b?` (~${(b/1048576).toFixed(0)} MB)`:'';
 
-api('/api/config').then(c=>{dir=c.download_dir;$('dir').textContent=dir});
+api('/api/config').then(c=>{desktop=c.desktop;dir=c.download_dir;$('dir').textContent=dir});
 
 function fillQuality(){
   const q=$('quality');
@@ -133,7 +133,7 @@ async function browse(p){
   $('dirs').innerHTML=(r.parent?`<div data-p="${esc(r.parent)}">📁 ..</div>`:'')+r.dirs.map(d=>`<div data-p="${esc(r.path.replace(/[\\/]$/,'')+(r.path.includes('\\')?'\\':'/')+d)}">📁 ${esc(d)}</div>`).join('');
   $('dirs').querySelectorAll('div').forEach(el=>el.onclick=()=>browse(el.dataset.p));
 }
-$('change').onclick=()=>{$('modal').classList.add('on');browse(dir)};
+$('change').onclick=async()=>{if(desktop){try{const c=await api('/api/pick-folder',{});dir=c.download_dir;$('dir').textContent=dir}catch(e){alert(e.message)}return}$('modal').classList.add('on');browse(dir)};
 $('cancel').onclick=()=>$('modal').classList.remove('on');
 $('mk').onclick=async()=>{try{await api('/api/mkdir',{path:browsing,name:$('newname').value});$('newname').value='';browse(browsing)}catch(e){alert(e.message)}};
 $('pick').onclick=async()=>{try{const c=await api('/api/config',{download_dir:browsing});dir=c.download_dir;$('dir').textContent=dir;$('modal').classList.remove('on')}catch(e){alert(e.message)}};
