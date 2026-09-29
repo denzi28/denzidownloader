@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DenziDownloader</title>
+<style>
+:root{--bg:#0f1115;--card:#181b22;--line:#2a2f3a;--text:#e8eaf0;--mute:#8b93a4;--acc:#4f8cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 16px}
+h1{font-size:22px;margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select,button{font:inherit;color:var(--text);background:#0f1115;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+input{flex:1;min-width:0}
+button{cursor:pointer;background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button.sec{background:transparent;border-color:var(--line);color:var(--text);font-weight:400}
+button:disabled{opacity:.5;cursor:default}
+.mute{color:var(--mute);font-size:13px}
+.err{color:#ff6b6b;margin-top:8px}
+.meta{display:flex;gap:12px;margin-bottom:12px}
+.meta img{width:160px;height:90px;object-fit:cover;border-radius:8px;background:#000}
+.tabs button{background:transparent;border-color:var(--line);font-weight:400}
+.tabs button.on{background:var(--acc);border-color:var(--acc);font-weight:600}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar div{height:100%;background:var(--acc);transition:width .3s}
+.job{padding:10px 0;border-top:1px solid var(--line)}.job:first-child{border:0}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:16px}
+.modal.on{display:flex}
+.modal .card{width:100%;max-width:520px;margin:0}
+.list{max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin:12px 0}
+.list div{padding:8px 12px;cursor:pointer}.list div:hover{background:#ffffff10}
+.path{word-break:break-all}
+</style>
+</head>
+<body>
+<main>
+<h1>⬇ DenziDownloader</h1>
+
+<div class="card">
+  <div class="row">
+    <input id="url" placeholder="Paste a YouTube / X / Instagram / TikTok … link" autofocus>
+    <button id="go">Analyze</button>
+  </div>
+  <div id="err" class="err"></div>
+</div>
+
+<div class="card" id="opts" hidden>
+  <div class="meta"><img id="thumb"><div><b id="title"></b><div class="mute" id="sub"></div></div></div>
+  <div class="row tabs" style="margin-bottom:12px">
+    <button id="tVideo" class="on">🎬 Video</button><button id="tAudio">🎵 MP3</button>
+  </div>
+  <div class="row" style="margin-bottom:12px">
+    <label class="mute">Quality</label>
+    <select id="quality"></select>
+  </div>
+  <div class="mute">Save to</div>
+  <div class="row" style="margin-bottom:12px">
+    <span class="path" id="dir" style="flex:1"></span>
+    <button class="sec" id="change">Change…</button>
+  </div>
+  <button id="dl">Download</button>
+</div>
+
+<div class="card" id="jobsCard" hidden><b>Downloads</b><div id="jobs"></div></div>
+</main>
+
+<div class="modal" id="modal"><div class="card">
+  <b>Choose download folder</b>
+  <div class="mute path" id="cur" style="margin-top:6px"></div>
+  <div class="list" id="dirs"></div>
+  <div class="row">
+    <input id="newname" placeholder="New folder name"><button class="sec" id="mk">Create</button>
+  </div>
+  <div class="row" style="margin-top:12px;justify-content:flex-end">
+    <button class="sec" id="cancel">Cancel</button><button id="pick">Use this folder</button>
+  </div>
+</div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+let info=null,mode='video',dir='',browsing='';
+const api=(u,b)=>fetch(u,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{}).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||'Error');return j});
+const fmtT=s=>s?`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`:'';
+const fmtS=b=>b?` (~${(b/1048576).toFixed(0)} MB)`:'';
+
+api('/api/config').then(c=>{dir=c.download_dir;$('dir').textContent=dir});
+
+function fillQuality(){
+  const q=$('quality');
+  if(mode==='audio') q.innerHTML='<option value="320">320 kbps (best)</option><option value="192" selected>192 kbps</option><option value="128">128 kbps</option>';
+  else q.innerHTML='<option value="">Best available</option>'+info.heights.map(h=>`<option value="${h.height}">${h.height}p${fmtS(h.size)}</option>`).join('');
+}
+function setMode(m){mode=m;$('tVideo').classList.toggle('on',m==='video');$('tAudio').classList.toggle('on',m==='audio');fillQuality()}
+$('tVideo').onclick=()=>setMode('video');$('tAudio').onclick=()=>setMode('audio');
+
+async function analyze(){
+  const url=$('url').value.trim();if(!url)return;
+  $('err').textContent='';$('opts').hidden=true;$('go').disabled=true;$('go').textContent='Analyzing…';
+  try{
+    info=await api('/api/info',{url});
+    $('thumb').src=info.thumbnail||'';$('title').textContent=info.title||'Untitled';
+    $('sub').textContent=[info.site,info.uploader,fmtT(info.duration)].filter(Boolean).join(' · ');
+    $('opts').hidden=false;setMode(mode);
+  }catch(e){$('err').textContent=e.message}
+  $('go').disabled=false;$('go').textContent='Analyze';
+}
+$('go').onclick=analyze;
+$('url').addEventListener('keydown',e=>e.key==='Enter'&&analyze());
+$('url').addEventListener('paste',()=>setTimeout(analyze,50));
+
+$('dl').onclick=async()=>{
+  try{
+    await api('/api/download',{url:$('url').value.trim(),mode,title:info.title,download_dir:dir,
+      height:mode==='video'?$('quality').value:null,audio_quality:mode==='audio'?$('quality').value:null});
+    poll();
+  }catch(e){$('err').textContent=e.message}
+};
+
+async function poll(){
+  const js=await api('/api/jobs');$('jobsCard').hidden=!js.length;
+  $('jobs').innerHTML=js.map(j=>`<div class="job"><div>${j.mode==='audio'?'🎵':'🎬'} ${esc(j.title)}</div>
+    <div class="mute">${j.status==='error'?'<span class="err">'+esc(j.error)+'</span>':j.status==='done'?'✅ Saved to '+esc(j.file||j.dir):j.status+' '+j.percent+'% '+(j.speed||'')+' '+(j.eta?'ETA '+j.eta:'')}</div>
+    ${j.status==='done'||j.status==='error'?'':`<div class="bar"><div style="width:${j.percent}%"></div></div>`}</div>`).join('');
+  if(js.some(j=>!['done','error'].includes(j.status)))setTimeout(poll,800);
+}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+poll();
+
+async function browse(p){
+  const r=await api('/api/browse?path='+encodeURIComponent(p||''));browsing=r.path;$('cur').textContent=r.path;
+  $('dirs').innerHTML=(r.parent?`<div data-p="${esc(r.parent)}">📁 ..</div>`:'')+r.dirs.map(d=>`<div data-p="${esc(r.path.replace(/[\\/]$/,'')+(r.path.includes('\\')?'\\':'/')+d)}">📁 ${esc(d)}</div>`).join('');
+  $('dirs').querySelectorAll('div').forEach(el=>el.onclick=()=>browse(el.dataset.p));
+}
+$('change').onclick=()=>{$('modal').classList.add('on');browse(dir)};
+$('cancel').onclick=()=>$('modal').classList.remove('on');
+$('mk').onclick=async()=>{try{await api('/api/mkdir',{path:browsing,name:$('newname').value});$('newname').value='';browse(browsing)}catch(e){alert(e.message)}};
+$('pick').onclick=async()=>{try{const c=await api('/api/config',{download_dir:browsing});dir=c.download_dir;$('dir').textContent=dir;$('modal').classList.remove('on')}catch(e){alert(e.message)}};
+</script>
+</body>
+</html>
