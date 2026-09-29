@@ -21,3 +21,6 @@ Opens http://127.0.0.1:8765. ffmpeg is bundled through `imageio-ffmpeg` (or uses
 The `extension/` folder is a Chrome (Manifest V3) extension that talks to the desktop app, so **the app must be running**. Click the toolbar icon on any video page: the link is filled in and analyzed automatically, then pick Video/MP3, quality and folder.
 
 Install: unzip `DenziDownloader-Chrome-Extension.zip` (on the Releases page), open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and select the unzipped folder. (Publishing on the Chrome Web Store needs a one-time $5 developer account.)
+
+## Start with Windows
+The installer has an option (on by default) to start DenziDownloader in the background at login, with a tray icon (Open / Quit). This keeps the browser extension working without opening the app. Launching the app normally then just opens a window for the already-running background instance.

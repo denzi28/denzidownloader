@@ -1,4 +1,6 @@
 flask>=3.0
 yt-dlp
 imageio-ffmpeg
+pillow
 pywebview; sys_platform != "linux"
+pystray; sys_platform == "win32"

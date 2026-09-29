@@ -92,25 +92,36 @@ def index():
     return send_from_directory(app.static_folder, "index.html")
 
 
-window = None  # pywebview window when running as a desktop app
+def has_folder_dialog():
+    try:
+        import tkinter  # noqa: F401
+        return True
+    except Exception:
+        return False
 
 
 @app.get("/api/config")
 def api_config():
-    return jsonify(download_dir=get_download_dir(), desktop=window is not None)
+    return jsonify(download_dir=get_download_dir(), desktop=has_folder_dialog())
 
 
 @app.post("/api/pick-folder")
 def api_pick_folder():
-    """Native folder dialog (desktop mode only)."""
-    import webview
-    if window is None:
-        return jsonify(error="Not in desktop mode"), 400
-    res = window.create_file_dialog(webview.FOLDER_DIALOG, directory=get_download_dir())
+    """Native folder dialog; runs in the app process so it works for the window and the extension."""
+    try:
+        import tkinter
+        from tkinter import filedialog
+        root = tkinter.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        res = filedialog.askdirectory(initialdir=get_download_dir(), title="Choose download folder", parent=root)
+        root.destroy()
+    except Exception as e:
+        return jsonify(error=f"Folder dialog unavailable: {e}"), 400
     if not res:
         return jsonify(download_dir=get_download_dir())
     try:
-        return jsonify(download_dir=set_download_dir(res[0]))
+        return jsonify(download_dir=set_download_dir(res))
     except Exception as e:
         return jsonify(error=str(e)), 400
 
@@ -253,23 +264,67 @@ def api_jobs():
     return jsonify(list(jobs.values())[::-1])
 
 
-def main():
-    global window
-    port = int(os.environ.get("PORT", 8765))
-    url = f"http://127.0.0.1:{port}"
-    threading.Thread(
-        target=lambda: app.run(host="127.0.0.1", port=port, threaded=True), daemon=True
-    ).start()
+def port_in_use(port):
+    import socket
+    with socket.socket() as sk:
+        sk.settimeout(0.5)
+        return sk.connect_ex(("127.0.0.1", port)) == 0
+
+
+def open_window(url, wait_forever=True):
     try:
         if os.environ.get("NO_DESKTOP"):
             raise ImportError
         import webview
-        window = webview.create_window("DenziDownloader", url, width=860, height=780)
+        webview.create_window("DenziDownloader", url, width=860, height=780)
         webview.start()
     except Exception:  # no webview available: fall back to the browser
-        window = None
         webbrowser.open(url)
+        if wait_forever:
+            threading.Event().wait()
+
+
+def run_tray(url):
+    """Background mode: tray icon with Open/Quit. Falls back to just waiting if no tray is available."""
+    try:
+        import subprocess
+        import pystray
+        from PIL import Image
+
+        def open_app(icon=None, item=None):
+            cmd = [sys.executable] if getattr(sys, "frozen", False) else [sys.executable, str(Path(__file__))]
+            subprocess.Popen(cmd)
+
+        def quit_app(icon, item):
+            icon.stop()
+            os._exit(0)
+
+        image = Image.open(APP_DIR / "static" / "icon.png")
+        menu = pystray.Menu(
+            pystray.MenuItem("Open DenziDownloader", open_app, default=True),
+            pystray.MenuItem("Quit", quit_app),
+        )
+        pystray.Icon("DenziDownloader", image, "DenziDownloader", menu).run()
+    except Exception:
         threading.Event().wait()
+
+
+def main():
+    port = int(os.environ.get("PORT", 8765))
+    url = f"http://127.0.0.1:{port}"
+    background = "--background" in sys.argv
+    if port_in_use(port):
+        # Already running (e.g. started with Windows): just show the window for it.
+        if not background:
+            open_window(url)
+        return
+    threading.Thread(
+        target=lambda: app.run(host="127.0.0.1", port=port, threaded=True), daemon=True
+    ).start()
+    if background:
+        run_tray(url)
+    else:
+        open_window(url)
 
 
 if __name__ == "__main__":

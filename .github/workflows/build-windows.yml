@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt pyinstaller
-      - run: pyinstaller --noconfirm --onefile --windowed --name DenziDownloader --add-data "static;static" --collect-all yt_dlp --collect-all imageio_ffmpeg app.py
+      - run: pyinstaller --noconfirm --onefile --windowed --name DenziDownloader --add-data "static;static" --collect-all yt_dlp --collect-all imageio_ffmpeg --hidden-import pystray._win32 app.py
       - name: Install Inno Setup if missing
         shell: pwsh
         run: |
