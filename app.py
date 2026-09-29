@@ -60,6 +60,33 @@ def base_opts():
     return opts
 
 
+def origin_allowed(origin):
+    return (
+        not origin
+        or origin.startswith("chrome-extension://")
+        or origin.startswith(("http://127.0.0.1:", "http://localhost:"))
+    )
+
+
+@app.before_request
+def guard_origin():
+    # Stop random websites from driving the local API; allow the app itself and the Chrome extension.
+    if not origin_allowed(request.headers.get("Origin")):
+        return jsonify(error="Forbidden origin"), 403
+    if request.method == "OPTIONS":
+        return "", 204
+
+
+@app.after_request
+def add_cors(resp):
+    origin = request.headers.get("Origin")
+    if origin and origin_allowed(origin):
+        resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return resp
+
+
 @app.get("/")
 def index():
     return send_from_directory(app.static_folder, "index.html")

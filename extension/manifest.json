@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "DenziDownloader",
+  "version": "1.0.0",
+  "description": "Download the video or MP3 of the page you're on, using the DenziDownloader desktop app.",
+  "action": { "default_popup": "popup.html", "default_title": "DenziDownloader" },
+  "permissions": ["activeTab", "tabs"],
+  "host_permissions": ["http://127.0.0.1:8765/*"],
+  "icons": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" }
+}

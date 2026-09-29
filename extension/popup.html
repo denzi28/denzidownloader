@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="popup.css"></head>
+<body>
+<h1>⬇ DenziDownloader</h1>
+<div id="offline" hidden class="err">The DenziDownloader app isn't running. Open it from the Start menu, then reopen this popup.</div>
+<div id="main">
+  <div class="row"><input id="url" placeholder="Paste a link…"><button id="go">Analyze</button></div>
+  <div id="err" class="err"></div>
+  <div id="opts" hidden>
+    <div class="meta"><img id="thumb"><div><b id="title"></b><div class="mute" id="sub"></div></div></div>
+    <div class="row tabs"><button id="tVideo" class="on">🎬 Video</button><button id="tAudio">🎵 MP3</button></div>
+    <div class="row"><span class="mute">Quality</span><select id="quality"></select></div>
+    <div class="mute">Save to</div>
+    <div class="row"><span id="dir" class="path"></span><button class="sec" id="change">Change…</button></div>
+    <div class="row" id="manual" hidden><input id="manualDir" placeholder="C:\Users\you\Videos"><button class="sec" id="setDir">Set</button></div>
+    <button id="dl" class="full">Download</button>
+  </div>
+  <div id="jobs"></div>
+</div>
+<script src="popup.js"></script>
+</body></html>

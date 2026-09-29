@@ -16,3 +16,8 @@ Opens http://127.0.0.1:8765. ffmpeg is bundled through `imageio-ffmpeg` (or uses
 - Toggle **MP3** for audio-only (128/192/320 kbps).
 - **Save to → Change…** picks the folder before downloading; the choice is remembered (`~/.denzidownloader.json`) and can be changed any time.
 - Private/age-restricted content may need login cookies; keep yt-dlp updated (`pip install -U yt-dlp`) since sites change often.
+
+## Chrome extension
+The `extension/` folder is a Chrome (Manifest V3) extension that talks to the desktop app, so **the app must be running**. Click the toolbar icon on any video page: the link is filled in and analyzed automatically, then pick Video/MP3, quality and folder.
+
+Install: unzip `DenziDownloader-Chrome-Extension.zip` (on the Releases page), open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and select the unzipped folder. (Publishing on the Chrome Web Store needs a one-time $5 developer account.)

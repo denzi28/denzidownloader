@@ -26,9 +26,18 @@ jobs:
         with:
           name: DenziDownloader-Setup
           path: installer_out/DenziDownloader-Setup.exe
+      - name: Zip Chrome extension
+        shell: pwsh
+        run: Compress-Archive -Path extension\* -DestinationPath DenziDownloader-Chrome-Extension.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DenziDownloader-Chrome-Extension
+          path: DenziDownloader-Chrome-Extension.zip
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: DenziDownloader 1.0.${{ github.run_number }}
-          files: installer_out/DenziDownloader-Setup.exe
+          files: |
+            installer_out/DenziDownloader-Setup.exe
+            DenziDownloader-Chrome-Extension.zip
           make_latest: true
