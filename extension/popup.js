@@ -66,8 +66,16 @@ $('dl').onclick = async () => {
   } catch (e) { $('err').textContent = e.message; }
 };
 
+const played = new Set();
+let firstPoll = true;
 async function poll() {
   const js = await api('/api/jobs');
+  for (const j of js) if (j.status === 'done' && !played.has(j.id)) {
+    played.add(j.id);
+    if (firstPoll) continue; // don't replay for downloads finished before the popup opened
+    const a = new Audio('sounds/notify.mp3'); a.volume = 0.15; a.play().catch(() => {}); setTimeout(() => a.pause(), 3000);
+  }
+  firstPoll = false;
   $('jobs').innerHTML = js.slice(0, 4).map(j => `<div class="job">${j.mode === 'audio' ? '🎵' : '🎬'} ${esc(j.title)}<br>
     <span class="mute">${j.status === 'error' ? esc(j.error) : j.status === 'done' ? '✅ Saved to ' + esc(j.dir) : j.status + ' ' + j.percent + '%'}</span>
     ${['done', 'error'].includes(j.status) ? '' : `<div class="bar"><div style="width:${j.percent}%"></div></div>`}</div>`).join('');

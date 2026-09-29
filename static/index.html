@@ -118,8 +118,11 @@ $('dl').onclick=async()=>{
   }catch(e){$('err').textContent=e.message}
 };
 
+const played=new Set();let firstPoll=true;
 async function poll(){
-  const js=await api('/api/jobs');$('jobsCard').hidden=!js.length;
+  const js=await api('/api/jobs');
+  for(const j of js)if(j.status==='done'&&!played.has(j.id)){played.add(j.id);if(firstPoll)continue;const a=new Audio('/static/notify.mp3');a.volume=0.15;a.play().catch(()=>{});setTimeout(()=>a.pause(),3000)}
+  firstPoll=false;$('jobsCard').hidden=!js.length;
   $('jobs').innerHTML=js.map(j=>`<div class="job"><div>${j.mode==='audio'?'🎵':'🎬'} ${esc(j.title)}</div>
     <div class="mute">${j.status==='error'?'<span class="err">'+esc(j.error)+'</span>':j.status==='done'?'✅ Saved to '+esc(j.file||j.dir):j.status+' '+j.percent+'% '+(j.speed||'')+' '+(j.eta?'ETA '+j.eta:'')}</div>
     ${j.status==='done'||j.status==='error'?'':`<div class="bar"><div style="width:${j.percent}%"></div></div>`}</div>`).join('');

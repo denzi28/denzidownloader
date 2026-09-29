@@ -2,6 +2,15 @@
 (() => {
   const ICON = chrome.runtime.getURL('icons/indir.png');
   const MIN_W = 200, MIN_H = 120;
+  const IDLE = '0.35', BUSY = '0.7'; // faint until hovered
+  const playDone = () => {
+    try {
+      const a = new Audio(chrome.runtime.getURL('sounds/notify.mp3'));
+      a.volume = 0.15;
+      a.play().catch(() => {});
+      setTimeout(() => a.pause(), 3000);
+    } catch {}
+  };
   const buttons = new Map(); // video -> button
 
   const POST_LINK = 'a[href*="/reel/"],a[href*="/p/"],a[href*="/status/"],a[href*="/video/"],a[href*="watch?v="],a[href*="/shorts/"]';
@@ -24,17 +33,17 @@
     Object.assign(b.style, {
       position: 'fixed', width: '64px', height: '64px', borderRadius: '50%', cursor: 'pointer',
       zIndex: 2147483647, boxShadow: '0 2px 8px #000a', border: '2px solid #fff',
-      transition: 'transform .15s, opacity .2s', objectFit: 'cover', display: 'none',
+      transition: 'transform .15s, opacity .2s', objectFit: 'cover', display: 'none', opacity: IDLE,
     });
-    b.onmouseenter = () => (b.style.transform = 'scale(1.15)');
-    b.onmouseleave = () => (b.style.transform = '');
+    b.onmouseenter = () => { b.style.transform = 'scale(1.15)'; b.style.opacity = '1'; };
+    b.onmouseleave = () => { b.style.transform = ''; b.style.opacity = b.dataset.busy ? BUSY : IDLE; };
     // Sites often listen for mouse events on the player; keep them from swallowing our click.
     for (const ev of ['mousedown', 'mouseup', 'pointerdown', 'pointerup', 'dblclick'])
       b.addEventListener(ev, e => e.stopPropagation(), true);
     b.addEventListener('click', async e => {
       e.preventDefault(); e.stopPropagation();
       if (b.dataset.busy) return;
-      b.dataset.busy = '1'; b.style.opacity = '.5'; b.title = 'Starting…';
+      b.dataset.busy = '1'; b.style.opacity = BUSY; b.title = 'Starting…';
       toast(b, 'Analyzing video…');
       let res;
       try {
@@ -49,7 +58,7 @@
         let s;
         try { s = await chrome.runtime.sendMessage({type: 'status', id: res.id}); } catch { return finish(b, '⚠ Lost connection to the extension', '#e5484d'); }
         const j = s?.job;
-        if (j?.status === 'done') return finish(b, '✅ Saved to ' + j.dir, '#30a46c');
+        if (j?.status === 'done') { playDone(); return finish(b, '✅ Saved to ' + j.dir, '#30a46c'); }
         if (j?.status === 'error') return finish(b, '⚠ ' + j.error, '#e5484d');
         b.title = `Downloading… ${j?.percent ?? 0}%`;
         setTimeout(tick, 1000);
@@ -82,7 +91,7 @@
 
   function finish(b, msg, color) {
     toast(b, msg);
-    b.title = msg; b.style.opacity = '1'; b.style.borderColor = color;
+    b.title = msg; b.style.opacity = b.matches(':hover') ? '1' : IDLE; b.style.borderColor = color;
     delete b.dataset.busy;
     setTimeout(() => (b.style.borderColor = '#fff'), 4000);
   }
