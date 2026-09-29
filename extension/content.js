@@ -6,7 +6,7 @@
   const playDone = () => {
     try {
       const a = new Audio(chrome.runtime.getURL('sounds/notify.mp3'));
-      a.volume = 0.15;
+      a.volume = 0.225;
       a.play().catch(() => {});
       setTimeout(() => a.pause(), 3000);
     } catch {}
@@ -31,7 +31,7 @@
     b.src = ICON;
     b.title = 'Download with DenziDownloader';
     Object.assign(b.style, {
-      position: 'fixed', width: '64px', height: '64px', borderRadius: '50%', cursor: 'pointer',
+      position: 'fixed', width: '38px', height: '38px', borderRadius: '50%', cursor: 'pointer',
       zIndex: 2147483647, boxShadow: '0 2px 8px #000a', border: '2px solid #fff',
       transition: 'transform .15s, opacity .2s', objectFit: 'cover', display: 'none', opacity: IDLE,
     });
@@ -108,7 +108,7 @@
       b.style.display = visible ? 'block' : 'none';
       if (visible) {
         b.style.top = Math.max(r.top, 0) + 12 + 'px';
-        b.style.left = Math.min(r.right, innerWidth) - 74 + 'px';
+        b.style.left = Math.min(r.right, innerWidth) - 48 + 'px';
       }
     }
   }

@@ -73,7 +73,7 @@ async function poll() {
   for (const j of js) if (j.status === 'done' && !played.has(j.id)) {
     played.add(j.id);
     if (firstPoll) continue; // don't replay for downloads finished before the popup opened
-    const a = new Audio('sounds/notify.mp3'); a.volume = 0.15; a.play().catch(() => {}); setTimeout(() => a.pause(), 3000);
+    const a = new Audio('sounds/notify.mp3'); a.volume = 0.225; a.play().catch(() => {}); setTimeout(() => a.pause(), 3000);
   }
   firstPoll = false;
   $('jobs').innerHTML = js.slice(0, 4).map(j => `<div class="job">${j.mode === 'audio' ? '🎵' : '🎬'} ${esc(j.title)}<br>
